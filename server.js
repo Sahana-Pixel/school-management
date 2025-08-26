@@ -1,17 +1,17 @@
 const express = require('express');
-const db = require('./db');
-const schoolRoutes = require('./routes/school');
+const bodyParser = require('body-parser');
+const connection = require('./db'); // our DB connection
+require('dotenv').config();
+
 const app = express();
-const PORT = 3000;
+app.use(bodyParser.json());
 
-
-
-// Middleware to parse JSON
-app.use(express.json());
-
+// Import routes
+const schoolRoutes = require('./routes/school');
 app.use('/', schoolRoutes);
 
-
+// Start server
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });

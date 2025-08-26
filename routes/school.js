@@ -1,57 +1,82 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db');
+const connection = require('../db');
 
-// POST /addSchool
+// Add School API
 router.post('/addSchool', (req, res) => {
   const { name, address, latitude, longitude } = req.body;
 
-  // Basic validation
+  // Validation
   if (!name || !address || !latitude || !longitude) {
-    return res.status(400).json({ message: 'All fields are required' });
+    return res.status(400).json({ error: 'All fields are required' });
   }
 
-  const query = 'INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)';
-  db.query(query, [name, address, latitude, longitude], (err, result) => {
+  if (isNaN(latitude) || isNaN(longitude)) {
+    return res.status(400).json({ error: 'Latitude and Longitude must be numbers' });
+  }
+
+  const sql = 'INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)';
+  connection.query(sql, [name, address, latitude, longitude], (err, result) => {
     if (err) {
-      return res.status(500).json({ message: 'Database error', error: err });
+      console.error('Error inserting school:', err);
+      return res.status(500).json({ error: 'Database error' });
     }
-    res.status(201).json({ message: 'School added successfully', schoolId: result.insertId });
+    res.status(201).json({
+      message: 'School added successfully',
+      schoolId: result.insertId
+    });
   });
 });
 
 module.exports = router;
 
-// GET /listSchools?latitude=...&longitude=...
+// List Schools API
 router.get('/listSchools', (req, res) => {
-  const userLat = parseFloat(req.query.latitude);
-  const userLng = parseFloat(req.query.longitude);
+  const { latitude, longitude } = req.query;
 
-  if (!userLat || !userLng) {
-    return res.status(400).json({ message: 'User latitude and longitude are required' });
+  // Validation
+  if (!latitude || !longitude) {
+    return res.status(400).json({ error: 'User latitude and longitude are required' });
+  }
+  if (isNaN(latitude) || isNaN(longitude)) {
+    return res.status(400).json({ error: 'Latitude and Longitude must be numbers' });
   }
 
-  // Fetch all schools
-  const query = 'SELECT * FROM schools';
-  db.query(query, (err, schools) => {
+  const sql = 'SELECT * FROM schools';
+  connection.query(sql, (err, results) => {
     if (err) {
-      return res.status(500).json({ message: 'Database error', error: err });
+      console.error('Error fetching schools:', err);
+      return res.status(500).json({ error: 'Database error' });
     }
 
-    // Calculate distance using Haversine formula
-    const schoolsWithDistance = schools.map((school) => {
-      const R = 6371; // Earth's radius in km
-      const dLat = (school.latitude - userLat) * (Math.PI / 180);
-      const dLng = (school.longitude - userLng) * (Math.PI / 180);
+    // Function to calculate distance using Haversine formula
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371; // Radius of Earth in km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
       const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(userLat * (Math.PI / 180)) *
-        Math.cos(school.latitude * (Math.PI / 180)) *
-        Math.sin(dLng / 2) ** 2;
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) *
+        Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const distance = R * c;
+      return R * c; // Distance in km
+    }
 
-      return { ...school, distance: distance.toFixed(2) + ' km' };
+    // Add distance to each school
+    const userLat = parseFloat(latitude);
+    const userLon = parseFloat(longitude);
+
+    const schoolsWithDistance = results.map(school => {
+      const distance = getDistance(userLat, userLon, school.latitude, school.longitude);
+      return {
+        id: school.id,
+        name: school.name,
+        address: school.address,
+        latitude: school.latitude,
+        longitude: school.longitude,
+        distance: distance.toFixed(2) + ' km'
+      };
     });
 
     // Sort by distance
