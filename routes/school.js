@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const connection = require('../db');
+const pool = require('../db'); // Updated to pool
 
 // Add School API
 router.post('/addSchool', (req, res) => {
@@ -19,28 +19,33 @@ router.post('/addSchool', (req, res) => {
     return res.status(400).json({ error: 'Latitude and Longitude must be numbers' });
   }
 
-  const sql = 'INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)';
-  
-  connection.query(sql, [name, address, lat, lon], (err, result) => {
+  // Check if school already exists
+  const checkSql = 'SELECT * FROM schools WHERE name = ? AND address = ?';
+  pool.query(checkSql, [name, address], (err, results) => {
     if (err) {
-      console.error('Database Error:', err); // Logs full error on server
-      // Send detailed message only in development, not production
-      return res.status(500).json({ 
-        error: 'Database error', 
-        details: err.message 
-      });
+      console.error('Database Error:', err);
+      return res.status(500).json({ error: 'Database error', details: err.message });
     }
 
-    res.status(201).json({
-      message: 'School added successfully',
-      schoolId: result.insertId
+    if (results.length > 0) {
+      return res.status(400).json({ error: 'School already exists' });
+    }
+
+    // Insert new school
+    const sql = 'INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)';
+    pool.query(sql, [name, address, lat, lon], (err, result) => {
+      if (err) {
+        console.error('Database Error:', err);
+        return res.status(500).json({ error: 'Database error', details: err.message });
+      }
+
+      res.status(201).json({
+        message: 'School added successfully',
+        schoolId: result.insertId
+      });
     });
   });
 });
-
-
-
-module.exports = router;
 
 // List Schools API
 router.get('/listSchools', (req, res) => {
@@ -55,7 +60,7 @@ router.get('/listSchools', (req, res) => {
   }
 
   const sql = 'SELECT * FROM schools';
-  connection.query(sql, (err, results) => {
+  pool.query(sql, (err, results) => {
     if (err) {
       console.error('Error fetching schools:', err);
       return res.status(500).json({ error: 'Database error' });
@@ -97,3 +102,5 @@ router.get('/listSchools', (req, res) => {
     res.json(schoolsWithDistance);
   });
 });
+
+module.exports = router;
