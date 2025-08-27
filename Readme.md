@@ -1,61 +1,79 @@
 # School Management API
 
-This project is a **Node.js** and **Express.js** based API for managing schools. It allows users to add new schools and retrieve a list of schools sorted by proximity to a user-specified location. The data is stored in a **MySQL** database.
+## Overview
+
+The School Management API is a RESTful service built with Node.js, Express.js, and MySQL. It allows users to:
+
+- Add new schools with details like name, address, latitude, and longitude.
+- Retrieve a list of schools sorted by proximity to a specified location.
+
+This project demonstrates handling geolocation-based data and building scalable APIs using modern JavaScript technologies.
 
 ---
 
-## 📂 Features
+## 🚀 Live APIs
 
-- Add a new school with name, address, latitude, and longitude.
-- List all schools sorted by distance from a given location.
-- Input validation for all API requests.
-- Easy to deploy and test using Postman.
+- **Add School**: [https://school-management-1-waww.onrender.com/addSchool](https://school-management-1-waww.onrender.com/addSchool)  
+- **List Schools**: [https://school-management-1-waww.onrender.com/listSchools?latitude=10.9716&longitude=80.5946](https://school-management-1-waww.onrender.com/listSchools?latitude=10.9716&longitude=80.5946)
 
 ---
 
 ## 🛠️ Technologies Used
 
-- **Node.js**
-- **Express.js**
-- **MySQL** (Database)
-- **dotenv** (Environment variable management)
-- **Nodemon** (Development server)
-- **Postman** (API testing)
+- **Node.js** – JavaScript runtime  
+- **Express.js** – Web framework for Node.js  
+- **MySQL** – Relational database  
+- **Haversine Formula** – For calculating geographical distances  
 
 ---
 
-## 📦 Project Setup
+## 📦 Installation
 
-### 1. Clone the repository
-```bash
-git clone https://github.com/Sahana-Pixel/school-management.git
-cd school-management-api
+To run this project locally:
 
-2. Install dependencies
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/Sahana-Pixel/school-management.git
+   cd school-management-api
+
+Install dependencies:
 npm install
 
-3. Setup environment variables
-Create a .env file in the root directory and add your MySQL configuration:
+Set up your MySQL database:
+Create a database named school_management.
 
+Create a table named schools with the following schema:
+CREATE TABLE schools (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  address VARCHAR(255) NOT NULL,
+  latitude FLOAT NOT NULL,
+  longitude FLOAT NOT NULL
+);
+
+
+Update the .env file with your MySQL credentials:
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=yourpassword
-DB_NAME=school_db
-PORT=3000
+DB_NAME=school_management
+PORT=5000
 
-4. Run the server
-npm run dev
-The server will start at http://localhost:3000
+Start the server:
+npm start
 
-📌 API Endpoints
+The API will be running at http://localhost:5000.
 
+📡 API Endpoints
 1. Add School
-Endpoint: /addSchool
-Method: POST
-Payload:
+Endpoint: POST /addSchool
+Description: Adds a new school to the database.
+
+Request Body:
 {
-  "name": "ABC School",
-  "address": "123 Main St",
+  "name": "XYZ School",
+  "address": "123 Main St, City",
   "latitude": 12.9716,
   "longitude": 77.5946
 }
@@ -64,29 +82,36 @@ Response:
   "message": "School added successfully",
   "schoolId": 1
 }
+Live API URL: https://school-management-1-waww.onrender.com/addSchool
 
 2. List Schools
-Endpoint: /listSchools
-Method: GET
+Endpoint: GET /listSchools
 Query Parameters:
-latitude (user latitude)
-longitude (user longitude)
+latitude: Latitude of the user's location.
+longitude: Longitude of the user's location.
+Description: Retrieves a list of schools sorted by proximity to the specified location.
 
-Response:
+Example Request (Live API):
+GET https://school-management-1-waww.onrender.com/listSchools?latitude=10.9716&longitude=80.5946
+
+Example Response:
 [
   {
     "id": 1,
     "name": "ABC School",
-    "address": "123 Main St",
-    "distance": "2.5 km"
+    "address": "456 Elm St, City",
+    "latitude": 10.9720,
+    "longitude": 80.5950,
+    "distance": 0.25
   },
   {
     "id": 2,
     "name": "XYZ School",
-    "address": "456 Park Ave",
-    "distance": "4.1 km"
+    "address": "123 Main St, City",
+    "latitude": 10.9716,
+    "longitude": 80.5946,
+    "distance": 0.00
   }
 ]
+The distance is calculated using the Haversine formula and is in kilometers.
 
-📌 Distance Calculation
-Distance is calculated using the Haversine formula to determine the proximity between the user and each school.
