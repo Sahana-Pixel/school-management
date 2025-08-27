@@ -5,28 +5,40 @@ const connection = require('../db');
 // Add School API
 router.post('/addSchool', (req, res) => {
   const { name, address, latitude, longitude } = req.body;
+  console.log("AddSchool endpoint hit");
 
   // Validation
   if (!name || !address || !latitude || !longitude) {
     return res.status(400).json({ error: 'All fields are required' });
   }
 
-  if (isNaN(latitude) || isNaN(longitude)) {
+  const lat = parseFloat(latitude);
+  const lon = parseFloat(longitude);
+
+  if (isNaN(lat) || isNaN(lon)) {
     return res.status(400).json({ error: 'Latitude and Longitude must be numbers' });
   }
 
   const sql = 'INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)';
-  connection.query(sql, [name, address, latitude, longitude], (err, result) => {
+  
+  connection.query(sql, [name, address, lat, lon], (err, result) => {
     if (err) {
-      console.error('Error inserting school:', err);
-      return res.status(500).json({ error: 'Database error' });
+      console.error('Database Error:', err); // Logs full error on server
+      // Send detailed message only in development, not production
+      return res.status(500).json({ 
+        error: 'Database error', 
+        details: err.message 
+      });
     }
+
     res.status(201).json({
       message: 'School added successfully',
       schoolId: result.insertId
     });
   });
 });
+
+
 
 module.exports = router;
 
